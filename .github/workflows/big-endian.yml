@@ -1,0 +1,75 @@
+
+name: Big-endian tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  s390x:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+        with:
+          platforms: s390x
+
+      - name: Build and test
+        run: |
+          docker run --rm \
+            --platform linux/s390x \
+            -v "$PWD:/src" \
+            -w /src \
+            ubuntu:24.04 \
+            bash -euxc '
+              apt-get update
+              DEBIAN_FRONTEND=noninteractive apt-get install -y \
+                build-essential \
+                autoconf \
+                automake \
+                libtool \
+                pkg-config \
+                libconfuse-dev \
+                fakeroot \
+                file \
+                python3 \
+                git \
+                make \
+                e2fsprogs \
+                dosfstools \
+                mtools \
+                genisoimage \
+                cpio \
+                squashfs-tools \
+                btrfs-progs \
+                f2fs-tools \
+                mtd-utils \
+                qemu-utils \
+                libssl-dev \
+                cryptsetup-bin \
+                erofs-utils \
+                fdisk \
+                bsdextrautils \
+                device-tree-compiler \
+                u-boot-tools \
+                jq \
+                arm-trusted-firmware-tools \
+                android-sdk-libsparse-utils \
+                rauc \
+                genext2fs
+
+              echo "Architecture:"
+              uname -m
+
+              python3 -c \
+                "import sys; assert sys.byteorder == '\''big'\''"
+
+              ./autogen.sh
+              ./configure
+              make -j2
+              make check
+            '
